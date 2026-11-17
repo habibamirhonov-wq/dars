@@ -41,7 +41,7 @@
   .btn.on { background:#14532d; border-color:#166534; }
   .btn.red { background:var(--red); border-color:var(--red); color:#fff; }
   .nishon { display:none; position:absolute; top:4px; right:6px; min-width:20px; height:20px; padding:0 5px; border-radius:10px; background:var(--red); color:#fff; font-size:12px; line-height:20px; text-align:center; }
-  #holat { display:none; text-align:center; padding:8px 10px; font-size:14px; background:#7f1d1d; }
+  #holat { display:none; user-select:text; text-align:center; padding:8px 10px; font-size:14px; background:#7f1d1d; }
 
   /* Yon oyna: chat va o'quvchilar */
   #yon { display:none; width:320px; flex-direction:column; background:var(--card); border-left:1px solid var(--line); }
@@ -95,9 +95,8 @@
     <button id="ruxsatsiz" class="ghost" style="display:none">Mikrofonsiz kirish (tinglayman va chatda yozaman)</button>
 
     <div id="ustozBox" class="ustoz-box" style="display:none">
-      Siz <b style="color:#fff">ustoz</b> sifatida kiryapsiz. O'quvchilarga mana shu silkani yuboring:
-      <div class="link" id="silka"></div>
-      <button id="nusxa" class="ghost" style="margin-top:0">Silkadan nusxa olish</button>
+      Siz <b style="color:#fff">ustoz</b> sifatida kiryapsiz. Dars boshlangach, pastdagi
+      <b style="color:#fff">«Silka olish»</b> tugmasi orqali o'quvchilar silkasini olasiz.
     </div>
   </div>
 </div>
@@ -131,6 +130,7 @@
     <button class="btn" id="bKam"><span>📷</span><i>Kamera</i></button>
     <button class="btn" id="bEkr"><span>🖥️</span><i>Ekranni ko'rsatish</i></button>
     <button class="btn" id="bChat"><span>💬</span><i>Chat</i><b class="nishon" id="chatSon"></b></button>
+    <button class="btn" id="bSilka" style="display:none"><span>🔗</span><i>Silka olish</i></button>
     <button class="btn" id="bOdam" style="display:none"><span>👥</span><i>O'quvchilar</i></button>
     <button class="btn" id="bYoz" style="display:none"><span>⏺️</span><i>Darsni yozish</i></button>
     <button class="btn red" id="bChiq"><span>🚪</span><i>Chiqish</i></button>
@@ -161,12 +161,7 @@
   var tayyor = !KALIT ? Promise.resolve() : iz(KALIT).then(function (h) {
     USTOZ = (h === IZ);
     if (!USTOZ) return;
-    var s = location.origin + location.pathname + (qs.get('dars') ? '?dars=' + xona : '');
-    $('silka').textContent = s;
     $('ustozBox').style.display = 'block';
-    $('nusxa').onclick = function () {
-      navigator.clipboard.writeText(s).then(function () { $('nusxa').textContent = 'Nusxa olindi ✓'; });
-    };
   }).catch(function () {});
 
   function xato(html) { var x = $('xato'); x.innerHTML = html; x.style.display = 'block'; }
@@ -258,6 +253,7 @@
     });
     api.addListener('videoConferenceJoined', function (e) {
       menId = e && e.id;
+      if (USTOZ) $('bSilka').style.display = ''; // silka faqat efir boshlangach chiqadi
       api.isAudioMuted().then(function (m) { mikBelgi(!m); });
       api.isVideoMuted().then(function (m) { belgi('bKam', !m, 'Kamera'); });
       Promise.resolve(api.getParticipantsInfo()).then(function (l) {
@@ -316,6 +312,13 @@
     if (!api) return;
     if (qulf && !USTOZ) { holat('Ustoz mikrofonlarni yopgan. Savolingizni chatga yozing.', 4000); return; }
     api.executeCommand('toggleAudio');
+  };
+  $('bSilka').onclick = function () {
+    var s = location.origin + location.pathname + (qs.get('dars') ? '?dars=' + xona : '');
+    var i = $('bSilka').querySelector('i');
+    function tayyor2() { i.textContent = 'Nusxa olindi ✓'; holat('O\'quvchilar silkasi nusxalandi: ' + s + ' — endi uni Telegramga qo\'ying (Ctrl+V).', 8000); setTimeout(function () { i.textContent = 'Silka olish'; }, 3000); }
+    function qolda() { holat('O\'quvchilar silkasi: ' + s, 20000); }
+    try { navigator.clipboard.writeText(s).then(tayyor2, qolda); } catch (e) { qolda(); }
   };
   $('bKam').onclick = function () { api && api.executeCommand('toggleVideo'); };
   $('bEkr').onclick = function () { api && api.executeCommand('toggleShareScreen'); };
