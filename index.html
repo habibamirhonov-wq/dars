@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Onlayn dars</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --line:#334155; --text:#f1f5f9; --muted:#94a3b8; --blue:#3b82f6; --red:#ef4444; --green:#22c55e; }
+  * { box-sizing:border-box; }
+  html,body { height:100%; margin:0; }
+  body { background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; }
+  button { font:inherit; cursor:pointer; }
+
+  /* Kirish sahifasi */
+  #kirish { min-height:100%; display:flex; align-items:center; justify-content:center; padding:20px; }
+  .card { width:100%; max-width:440px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:28px 24px; }
+  h1 { margin:0 0 6px; font-size:26px; }
+  .sub { margin:0 0 22px; color:var(--muted); font-size:15px; }
+  label { display:block; font-size:15px; margin-bottom:8px; }
+  input[type=text] { width:100%; padding:14px; font-size:17px; border-radius:12px; border:1px solid var(--line); background:#0b1220; color:var(--text); outline:none; }
+  input[type=text]:focus { border-color:var(--blue); }
+  .ruxsat { margin:18px 0; padding:14px; border-radius:12px; background:#0b1220; border:1px dashed var(--line); font-size:15px; line-height:1.5; }
+  .ruxsat b { color:#fff; }
+  .big { width:100%; padding:16px; font-size:18px; font-weight:600; border:0; border-radius:12px; background:var(--blue); color:#fff; }
+  .big:disabled { opacity:.6; }
+  .xato { display:none; margin-top:16px; padding:14px; border-radius:12px; background:#451a1a; border:1px solid #7f1d1d; font-size:15px; line-height:1.5; }
+  .ghost { margin-top:10px; width:100%; padding:13px; font-size:15px; border-radius:12px; border:1px solid var(--line); background:transparent; color:var(--text); }
+  .ustoz-box { margin-top:20px; padding-top:18px; border-top:1px solid var(--line); font-size:14px; color:var(--muted); }
+  .ustoz-box .link { margin:8px 0; padding:10px; border-radius:10px; background:#0b1220; color:#fff; word-break:break-all; font-size:14px; }
+
+  /* Dars sahifasi */
+  #dars { display:none; height:100%; flex-direction:column; }
+  #video { flex:1; min-height:0; background:#000; }
+  #video iframe { display:block; }
+  #panel { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; padding:10px; background:var(--card); border-top:1px solid var(--line); }
+  .btn { min-width:104px; padding:10px 12px; border-radius:12px; border:1px solid var(--line); background:#0b1220; color:var(--text); font-size:14px; line-height:1.25; }
+  .btn span { display:block; font-size:22px; margin-bottom:2px; }
+  .btn.off { background:#451a1a; border-color:#7f1d1d; }
+  .btn.on { background:#14532d; border-color:#166534; }
+  .btn.red { background:var(--red); border-color:var(--red); color:#fff; }
+  #holat { display:none; text-align:center; padding:8px 10px; font-size:14px; background:#7f1d1d; }
+  @media (max-width:520px){ .btn{ min-width:0; flex:1 1 30%; font-size:13px; padding:8px 6px; } }
+</style>
+</head>
+<body>
+
+<div id="kirish">
+  <div class="card">
+    <h1>Onlayn dars</h1>
+    <p class="sub">Ro'yxatdan o'tish shart emas. Ismingizni yozing va kiring.</p>
+
+    <label for="ism">Ismingiz</label>
+    <input id="ism" type="text" maxlength="40" placeholder="Masalan: Ali Valiyev" autocomplete="name">
+
+    <div class="ruxsat">
+      🎤 📷 Tugmani bosganingizdan keyin telefon yoki kompyuteringiz
+      <b>mikrofon va kameradan foydalanishga ruxsat</b> so'raydi.
+      Chiqqan oynada <b>«Ruxsat berish»</b> (<b>Разрешить</b> / <b>Allow</b>) tugmasini bosing.
+      Busiz sizni hech kim eshitmaydi va ko'rmaydi.
+    </div>
+
+    <button id="kir" class="big">Darsga kirish</button>
+
+    <div id="xato" class="xato"></div>
+    <button id="ruxsatsiz" class="ghost" style="display:none">Mikrofonsiz kirish (faqat tinglayman)</button>
+
+    <div id="ustozBox" class="ustoz-box" style="display:none">
+      Siz <b style="color:#fff">ustoz</b> sifatida kiryapsiz. O'quvchilarga mana shu silkani yuboring:
+      <div class="link" id="silka"></div>
+      <button id="nusxa" class="ghost" style="margin-top:0">Silkadan nusxa olish</button>
+    </div>
+  </div>
+</div>
+
+<div id="dars">
+  <div id="holat"></div>
+  <div id="video"></div>
+  <div id="panel">
+    <button class="btn" id="bMik"><span>🎤</span><i style="font-style:normal">Mikrofon</i></button>
+    <button class="btn" id="bKam"><span>📷</span><i style="font-style:normal">Kamera</i></button>
+    <button class="btn" id="bEkr"><span>🖥️</span><i style="font-style:normal">Ekranni ko'rsatish</i></button>
+    <button class="btn" id="bYoz" style="display:none"><span>⏺️</span><i style="font-style:normal">Darsni yozish</i></button>
+    <button class="btn red" id="bChiq"><span>🚪</span><i style="font-style:normal">Chiqish</i></button>
+  </div>
+</div>
+
+<script src="https://8x8.vc/vpaas-magic-cookie-bec5e2d55ebe4631ada0184a2b291b2b/external_api.js"></script>
+<script>
+(function () {
+  var APP = 'vpaas-magic-cookie-bec5e2d55ebe4631ada0184a2b291b2b';
+  var $ = function (id) { return document.getElementById(id); };
+  var qs = new URLSearchParams(location.search);
+  var USTOZ = qs.has('ustoz');
+  // Xona nomi: silkadagi ?dars=nom, bo'lmasa bitta doimiy xona
+  var xona = (qs.get('dars') || 'asosiy-dars').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40) || 'asosiy-dars';
+  var api = null, micOk = true;
+
+  try { $('ism').value = localStorage.getItem('ism') || ''; } catch (e) {}
+
+  if (USTOZ) {
+    var s = location.origin + location.pathname + (qs.get('dars') ? '?dars=' + xona : '');
+    $('silka').textContent = s;
+    $('ustozBox').style.display = 'block';
+    $('nusxa').onclick = function () {
+      navigator.clipboard.writeText(s).then(function () { $('nusxa').textContent = 'Nusxa olindi ✓'; });
+    };
+  }
+
+  function xato(html) { var x = $('xato'); x.innerHTML = html; x.style.display = 'block'; }
+
+  // 1) Ruxsatni o'zimiz, o'zbekcha tushuntirib so'raymiz
+  async function ruxsatSora() {
+    var md = navigator.mediaDevices;
+    if (!md || !md.getUserMedia) return { audio: false, video: false, sabab: 'yoq' };
+    try {
+      var st = await md.getUserMedia({ audio: true, video: true });
+      st.getTracks().forEach(function (t) { t.stop(); });
+      return { audio: true, video: true };
+    } catch (e1) {
+      try { // kamera yo'q bo'lishi mumkin — faqat mikrofon
+        var st2 = await md.getUserMedia({ audio: true });
+        st2.getTracks().forEach(function (t) { t.stop(); });
+        return { audio: true, video: false };
+      } catch (e2) {
+        return { audio: false, video: false, sabab: (e2 && e2.name) || 'xato' };
+      }
+    }
+  }
+
+  $('kir').onclick = async function () {
+    var ism = $('ism').value.trim();
+    if (!ism) { xato('Iltimos, avval <b>ismingizni</b> yozing.'); $('ism').focus(); return; }
+    try { localStorage.setItem('ism', ism); } catch (e) {}
+    $('xato').style.display = 'none';
+    $('kir').disabled = true; $('kir').textContent = 'Ruxsat so\'ralmoqda…';
+    var r = await ruxsatSora();
+    $('kir').disabled = false; $('kir').textContent = 'Darsga kirish';
+    if (!r.audio) {
+      if (r.sabab === 'NotAllowedError' || r.sabab === 'SecurityError') {
+        xato('<b>Ruxsat berilmadi.</b><br>Yuqorida, sayt manzili yonidagi 🔒 (qulf) belgisini bosing, ' +
+             '«Mikrofon» va «Kamera»ni <b>yoqing</b>, keyin yana «Darsga kirish» tugmasini bosing.');
+      } else {
+        xato('<b>Mikrofon topilmadi.</b><br>Mikrofon yoki naushnik ulanganini tekshiring va qayta urinib ko\'ring.');
+      }
+      $('ruxsatsiz').style.display = 'block';
+      return;
+    }
+    boshla(ism, r);
+  };
+  $('ism').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('kir').click(); });
+  $('ruxsatsiz').onclick = function () {
+    var ism = $('ism').value.trim() || 'Mehmon';
+    boshla(ism, { audio: false, video: false });
+  };
+
+  // 2) Darsni ochish
+  function boshla(ism, r) {
+    micOk = r.audio;
+    $('kirish').style.display = 'none';
+    $('dars').style.display = 'flex';
+    if (USTOZ && navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia && window.MediaRecorder) $('bYoz').style.display = '';
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia)) $('bEkr').style.display = 'none'; // telefonda ekran ko'rsatib bo'lmaydi
+
+    api = new JitsiMeetExternalAPI('8x8.vc', {
+      roomName: APP + '/' + xona,
+      parentNode: $('video'),
+      width: '100%', height: '100%',
+      lang: 'uz',
+      userInfo: { displayName: ism },
+      configOverwrite: {
+        prejoinConfig: { enabled: false },
+        startWithAudioMuted: !USTOZ,          // o'quvchi ovozsiz kiradi, shovqin bo'lmaydi
+        startWithVideoMuted: !r.video || !USTOZ,
+        disableDeepLinking: true,             // telefonda ilova o'rnatishni so'ramasin
+        toolbarButtons: [],
+        disableInviteFunctions: true,
+        hideConferenceSubject: true,
+        notifications: [],
+        defaultLanguage: 'uz'
+      },
+      interfaceConfigOverwrite: { MOBILE_APP_PROMO: false, TOOLBAR_BUTTONS: [], SHOW_JITSI_WATERMARK: false }
+    });
+
+    api.addListener('audioMuteStatusChanged', function (e) { belgi('bMik', !e.muted, 'Mikrofon'); if (micTrack) micTrack.enabled = !e.muted; });
+    api.addListener('videoMuteStatusChanged', function (e) { belgi('bKam', !e.muted, 'Kamera'); });
+    api.addListener('screenSharingStatusChanged', function (e) {
+      $('bEkr').classList.toggle('on', !!e.on);
+      $('bEkr').querySelector('i').textContent = e.on ? 'Ko\'rsatishni to\'xtatish' : 'Ekranni ko\'rsatish';
+    });
+    api.addListener('videoConferenceJoined', function () {
+      api.isAudioMuted().then(function (m) { belgi('bMik', !m, 'Mikrofon'); });
+      api.isVideoMuted().then(function (m) { belgi('bKam', !m, 'Kamera'); });
+    });
+    api.addListener('readyToClose', chiqdi);
+    api.addListener('videoConferenceLeft', chiqdi);
+  }
+
+  function belgi(id, yoniq, nom) {
+    var b = $(id);
+    b.classList.toggle('off', !yoniq); b.classList.toggle('on', yoniq);
+    b.querySelector('i').textContent = nom + (yoniq ? ' yoniq' : ' o\'chiq');
+  }
+
+  $('bMik').onclick = function () { api && api.executeCommand('toggleAudio'); };
+  $('bKam').onclick = function () { api && api.executeCommand('toggleVideo'); };
+  $('bEkr').onclick = function () { api && api.executeCommand('toggleShareScreen'); };
+  $('bChiq').onclick = function () {
+    if (rec && rec.state !== 'inactive') { yozuvToxtat(); }
+    api && api.executeCommand('hangup');
+    setTimeout(chiqdi, 800);
+  };
+
+  var chiqildi = false;
+  function chiqdi() {
+    if (chiqildi) return; chiqildi = true;
+    try { api && api.dispose(); } catch (e) {}
+    $('dars').style.display = 'none';
+    $('kirish').style.display = 'flex';
+    $('kirish').querySelector('.card').innerHTML =
+      '<h1>Dars tugadi</h1><p class="sub">Siz darsdan chiqdingiz.</p>' +
+      '<button class="big" onclick="location.reload()">Qayta kirish</button>';
+  }
+
+  // 3) Yozish (faqat ustoz). Fayl kompyuterga saqlanadi.
+  var rec = null, qismlar = [], micTrack = null, ekranSt = null, micSt = null, actx = null;
+
+  $('bYoz').onclick = function () { (rec && rec.state !== 'inactive') ? yozuvToxtat() : yozuvBoshla(); };
+
+  function holat(t) { var h = $('holat'); h.textContent = t || ''; h.style.display = t ? 'block' : 'none'; }
+
+  async function yozuvBoshla() {
+    try {
+      ekranSt = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: 15 }, audio: true,
+        preferCurrentTab: true, selfBrowserSurface: 'include', systemAudio: 'include'
+      });
+    } catch (e) { return; } // ustoz bekor qildi
+    try { micSt = await navigator.mediaDevices.getUserMedia({ audio: true }); } catch (e) { micSt = null; }
+
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    var dest = actx.createMediaStreamDestination();
+    if (ekranSt.getAudioTracks().length) actx.createMediaStreamSource(new MediaStream(ekranSt.getAudioTracks())).connect(dest);
+    if (micSt) {
+      micTrack = micSt.getAudioTracks()[0];
+      actx.createMediaStreamSource(micSt).connect(dest);
+      try { api.isAudioMuted().then(function (m) { if (micTrack) micTrack.enabled = !m; }); } catch (e) {}
+    }
+    var st = new MediaStream(ekranSt.getVideoTracks().concat(dest.stream.getAudioTracks()));
+    var tur = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm'].filter(function (m) { return MediaRecorder.isTypeSupported(m); })[0];
+    qismlar = [];
+    rec = new MediaRecorder(st, { mimeType: tur, videoBitsPerSecond: 1200000, audioBitsPerSecond: 96000 });
+    rec.ondataavailable = function (e) { if (e.data && e.data.size) qismlar.push(e.data); };
+    rec.onstop = saqla;
+    ekranSt.getVideoTracks()[0].onended = yozuvToxtat; // "Stop sharing" bosilsa
+    rec.start(5000);
+    $('bYoz').classList.add('red');
+    $('bYoz').querySelector('i').textContent = 'Yozuvni to\'xtatish';
+    holat('⏺ Dars yozilmoqda. To\'xtatsangiz video kompyuteringizga saqlanadi. Bu sahifani yopmang!');
+    if (!ekranSt.getAudioTracks().length) holat('⏺ Yozilmoqda, lekin o\'quvchilar ovozi yozilmayapti: oynada «Также предоставить доступ к аудио вкладки» belgisini yoqib qayta boshlang.');
+  }
+
+  function yozuvToxtat() { if (rec && rec.state !== 'inactive') rec.stop(); }
+
+  function saqla() {
+    [ekranSt, micSt].forEach(function (s) { s && s.getTracks().forEach(function (t) { t.stop(); }); });
+    try { actx && actx.close(); } catch (e) {}
+    micTrack = null;
+    var blob = new Blob(qismlar, { type: 'video/webm' }); qismlar = [];
+    var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'dars-' + d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + '_' + p(d.getHours()) + '-' + p(d.getMinutes()) + '.webm';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 60000);
+    $('bYoz').classList.remove('red');
+    $('bYoz').querySelector('i').textContent = 'Darsni yozish';
+    holat('');
+  }
+
+  window.addEventListener('beforeunload', function (e) {
+    if (rec && rec.state !== 'inactive') { e.preventDefault(); e.returnValue = ''; }
+  });
+})();
+</script>
+</body>
+</html>
