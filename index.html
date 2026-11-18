@@ -25,6 +25,8 @@
   .big:disabled { opacity:.6; }
   .xato { display:none; margin-top:16px; padding:14px; border-radius:12px; background:#451a1a; border:1px solid #7f1d1d; font-size:15px; line-height:1.5; }
   .ghost { margin-top:10px; width:100%; padding:13px; font-size:15px; border-radius:12px; border:1px solid var(--line); background:transparent; color:var(--text); }
+  #oldin { width:100%; aspect-ratio:16/9; background:#000; border-radius:12px; margin-bottom:14px; object-fit:cover; transform:scaleX(-1); }
+  select { width:100%; padding:13px; font-size:16px; border-radius:12px; border:1px solid var(--line); background:#0b1220; color:var(--text); }
   .ustoz-box { margin-top:20px; padding-top:18px; border-top:1px solid var(--line); font-size:14px; color:var(--muted); }
   .ustoz-box .link { margin:8px 0; padding:10px; border-radius:10px; background:#0b1220; color:#fff; word-break:break-all; font-size:14px; }
 
@@ -76,6 +78,16 @@
 
 <div id="kirish">
   <div class="card">
+   <div id="tanlov" style="display:none">
+    <h1>Kamerani tanlang</h1>
+    <p class="sub">Pastda o'zingiz ko'rinishingiz kerak. Rasm qora bo'lsa, ro'yxatdan boshqa kamerani tanlang.</p>
+    <video id="oldin" autoplay muted playsinline></video>
+    <label for="kamSel">Kamera</label>
+    <select id="kamSel"></select>
+    <button id="davom" class="big" style="margin-top:16px">Davom etish</button>
+    <button id="kamerasiz" class="ghost">Kamerasiz kirish</button>
+   </div>
+   <div id="asosiy">
     <h1>Onlayn dars</h1>
     <p class="sub">Ro'yxatdan o'tish shart emas. Ismingizni yozing va kiring.</p>
 
@@ -98,6 +110,7 @@
       Siz <b style="color:#fff">ustoz</b> sifatida kiryapsiz. Dars boshlangach, pastdagi
       <b style="color:#fff">«Silka olish»</b> tugmasi orqali o'quvchilar silkasini olasiz.
     </div>
+   </div>
   </div>
 </div>
 
@@ -204,8 +217,52 @@
       $('ruxsatsiz').style.display = 'block';
       return;
     }
+    if (r.video && !MOBIL) {
+      try {
+        var hamma = await navigator.mediaDevices.enumerateDevices();
+        var kam = hamma.filter(function (d) { return d.kind === 'videoinput' && d.deviceId; });
+        if (kam.length > 1) { kameraTanla(kam, ism, r); return; }
+      } catch (e) {}
+    }
     boshla(ism, r);
   };
+
+  // Bir nechta kamera bo'lsa (masalan OBS virtual kamerasi) — ko'rib tanlash
+  var MOBIL = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  var oldSt = null;
+  function oldToxta() { if (oldSt) { oldSt.getTracks().forEach(function (t) { t.stop(); }); oldSt = null; } }
+  async function oldKorsat(id) {
+    oldToxta();
+    try {
+      oldSt = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: id } } });
+      $('oldin').srcObject = oldSt;
+    } catch (e) { $('oldin').srcObject = null; }
+  }
+  function kameraTanla(kam, ism, r) {
+    var sel = $('kamSel'), eski = '';
+    try { eski = localStorage.getItem('kamera') || ''; } catch (e) {}
+    sel.innerHTML = '';
+    kam.forEach(function (d, i) {
+      var o = document.createElement('option');
+      o.value = d.deviceId; o.textContent = d.label || ('Kamera ' + (i + 1));
+      if (d.label && d.label === eski) o.selected = true;
+      sel.appendChild(o);
+    });
+    // eslab qolingani bo'lmasa, virtual kamerani emas, haqiqiysini tanlaymiz
+    if (!eski || sel.selectedIndex < 0 || sel.options[sel.selectedIndex].textContent !== eski) {
+      for (var i = 0; i < sel.options.length; i++) { if (!/virtual|obs|snap|droidcam/i.test(sel.options[i].textContent)) { sel.selectedIndex = i; break; } }
+    }
+    $('asosiy').style.display = 'none';
+    $('tanlov').style.display = 'block';
+    oldKorsat(sel.value);
+    sel.onchange = function () { oldKorsat(sel.value); };
+    $('davom').onclick = function () {
+      r.kamera = sel.options[sel.selectedIndex].textContent; r.kameraId = sel.value;
+      try { localStorage.setItem('kamera', r.kamera); } catch (e) {}
+      oldToxta(); setTimeout(function () { boshla(ism, r); }, 300);
+    };
+    $('kamerasiz').onclick = function () { r.video = false; oldToxta(); boshla(ism, r); };
+  }
   $('ism').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('kir').click(); });
   $('ruxsatsiz').onclick = async function () {
     await tayyor;
@@ -227,6 +284,7 @@
       width: '100%', height: '100%',
       lang: 'uz',
       userInfo: { displayName: USTOZ ? ism + ' (ustoz)' : ism },
+      devices: r.kamera ? { videoInput: r.kamera } : undefined,
       configOverwrite: {
         prejoinConfig: { enabled: false },
         startWithAudioMuted: !USTOZ,
@@ -254,6 +312,7 @@
     api.addListener('videoConferenceJoined', function (e) {
       menId = e && e.id;
       if (USTOZ) $('bSilka').style.display = ''; // silka faqat efir boshlangach chiqadi
+      if (r.kamera) { try { api.setVideoInputDevice(r.kamera, r.kameraId); } catch (x) {} }
       api.isAudioMuted().then(function (m) { mikBelgi(!m); });
       api.isVideoMuted().then(function (m) { belgi('bKam', !m, 'Kamera'); });
       Promise.resolve(api.getParticipantsInfo()).then(function (l) {
