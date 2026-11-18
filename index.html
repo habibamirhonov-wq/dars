@@ -147,6 +147,7 @@
     <button class="btn" id="bOdam" style="display:none"><span>👥</span><i>O'quvchilar</i></button>
     <button class="btn" id="bYoz" style="display:none"><span>⏺️</span><i>Darsni yozish</i></button>
     <button class="btn red" id="bChiq"><span>🚪</span><i>Chiqish</i></button>
+    <button class="btn red" id="bTugat" style="display:none"><span>⛔</span><i>Darsni tugatish</i></button>
   </div>
 </div>
 
@@ -311,7 +312,7 @@
     });
     api.addListener('videoConferenceJoined', function (e) {
       menId = e && e.id;
-      if (USTOZ) $('bSilka').style.display = ''; // silka faqat efir boshlangach chiqadi
+      if (USTOZ) { $('bSilka').style.display = ''; $('bTugat').style.display = ''; $('bChiq').querySelector('i').textContent = 'Faqat men chiqaman'; }
       if (r.kamera) { try { api.setVideoInputDevice(r.kamera, r.kameraId); } catch (x) {} }
       api.isAudioMuted().then(function (m) { mikBelgi(!m); });
       api.isVideoMuted().then(function (m) { belgi('bKam', !m, 'Kamera'); });
@@ -387,13 +388,25 @@
     setTimeout(chiqdi, 800);
   };
 
+  // Ustoz: darsni hamma uchun tugatish
+  var tugatT = false, tugadi = false;
+  $('bTugat').onclick = function () {
+    var i = $('bTugat').querySelector('i');
+    if (!tugatT) { tugatT = true; i.textContent = 'Aniqmi? Yana bosing'; setTimeout(function () { tugatT = false; i.textContent = 'Darsni tugatish'; }, 3000); return; }
+    hammaga('tugat');
+    if (rec && rec.state !== 'inactive') yozuvToxtat();
+    setTimeout(function () { api && api.executeCommand('hangup'); setTimeout(chiqdi, 800); }, 1200);
+  };
+
   var chiqildi = false;
   function chiqdi() {
     if (chiqildi) return; chiqildi = true;
     try { api && api.dispose(); } catch (e) {}
     $('dars').style.display = 'none';
     $('kirish').style.display = 'flex';
-    $('kirish').querySelector('.card').innerHTML = chiqarildi
+    $('kirish').querySelector('.card').innerHTML = tugadi
+      ? '<h1>Dars tugadi</h1><p class="sub">Ustoz darsni yakunladi. Rahmat!</p>'
+      : chiqarildi
       ? '<h1>Siz darsdan chiqarildingiz</h1><p class="sub">Ustoz sizni darsdan chiqardi.</p>'
       : '<h1>Dars tugadi</h1><p class="sub">Siz darsdan chiqdingiz.</p>' +
         '<button class="big" onclick="location.reload()">Qayta kirish</button>';
@@ -453,6 +466,10 @@
       qulf = false;
       api.isAudioMuted().then(function (m) { mikBelgi(!m); });
       holat('Ustoz mikrofonlarni ochdi. Endi gapirishingiz mumkin.', 5000);
+    } else if (a === 'tugat') {
+      tugadi = true;
+      api.executeCommand('hangup');
+      setTimeout(chiqdi, 800);
     } else if (a === 'chiq') {
       chiqarildi = true;
       api.executeCommand('hangup');
